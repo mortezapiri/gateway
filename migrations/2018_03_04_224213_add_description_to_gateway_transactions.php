@@ -1,16 +1,11 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 class AddDescriptionToGatewayTransactions extends Migration
 {
-    public function getTable()
-    {
-        return config('gateway.table', 'gateway_transactions');
-    }
-
     /**
      * Run the migrations.
      *
@@ -18,7 +13,8 @@ class AddDescriptionToGatewayTransactions extends Migration
      */
     public function up()
     {
-        Schema::table($this->getTable(), function (Blueprint $table) {
+        Schema::table('gateway_transactions', function (Blueprint $table) {
+            //
             $table->text('description')->after('ip')->nullable();
         });
     }
@@ -30,8 +26,10 @@ class AddDescriptionToGatewayTransactions extends Migration
      */
     public function down()
     {
-        Schema::table($this->getTable(), function (Blueprint $table) {
+        Schema::table('gateway_transactions', function (Blueprint $table) {
+            //
             $table->dropColumn('description');
+
         });
     }
 }

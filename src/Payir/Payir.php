@@ -13,21 +13,20 @@ class Payir extends PortAbstract implements PortInterface
      *
      * @var string
      */
-    protected $serverUrl = 'https://pay.ir/pg/send';
+    protected $serverUrl = 'https://pay.ir/payment/send';
 
     /**
      * Address of CURL server for verify payment
      *
      * @var string
      */
-    protected $serverVerifyUrl = 'https://pay.ir/pg/verify';
-
+    protected $serverVerifyUrl = 'https://pay.ir/payment/verify';
     /**
      * Address of gate for redirect
      *
      * @var string
      */
-    protected $gateUrl = 'https://pay.ir/pg/';
+    protected $gateUrl = 'https://pay.ir/payment/gateway/';
 
 
     protected $factorNumber;
@@ -132,7 +131,7 @@ class Payir extends PortAbstract implements PortInterface
         $response = json_decode($response, true);
         curl_close($ch);
         if (is_numeric($response['status']) && $response['status'] > 0) {
-            $this->refId = $response['token'];
+            $this->refId = $response['transId'];
             $this->transactionSetRefId();
             return true;
         }
@@ -151,11 +150,15 @@ class Payir extends PortAbstract implements PortInterface
     protected function userPayment()
     {
         $status = Request::input('status');
+        $transId = Request::input('transId');
+        $this->cardNumber = Request::input('cardNumber');
+        $message = Request::input('message');
         if (is_numeric($status) && $status > 0) {
+            $this->trackingCode = $transId;
             return true;
         }
         $this->transactionFailed();
-        $this->newLog(-5, Enum::TRANSACTION_FAILED_TEXT);
+        $this->newLog(-5, $message);
         throw new PayirReceiveException(-5);
     }
 
@@ -170,7 +173,7 @@ class Payir extends PortAbstract implements PortInterface
     {
         $fields = [
             'api'     => $this->config->get('gateway.payir.api'),
-            'token'   => $this->refId(),
+            'transId' => $this->refId(),
         ];
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->serverVerifyUrl);
@@ -181,8 +184,6 @@ class Payir extends PortAbstract implements PortInterface
         $response = json_decode($response, true);
         curl_close($ch);
         if ($response['status'] == 1) {
-            $this->trackingCode = $response['transId'];
-            $this->cardNumber = $response['cardNumber'];
             $this->transactionSucceed();
             $this->newLog(1, Enum::TRANSACTION_SUCCEED_TEXT);
             return true;
